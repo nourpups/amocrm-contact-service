@@ -13,14 +13,6 @@ use App\Services\AmoCRM;
 
 class ContactController extends Controller
 {
-
-    public function create()
-    {
-        $genders = Genders::cases();
-
-        return view('contacts.create', compact('genders'));
-    }
-
     /**
      * @throws AmoCRMApiException
      * @throws AmoCRMMissedTokenException
@@ -29,7 +21,6 @@ class ContactController extends Controller
     public function store(StoreContactRequest $request, AmoCRM $amoCRM)
     {
         $data = $request->validated();
-        dd($data);
 
         $contacts = $amoCRM->apiClient->contacts()->get();
         if (!$amoCRM->isContactUnique($contacts, $data['custom_fields_values']['phone'])) {
