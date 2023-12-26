@@ -9,4 +9,4 @@ Route::get('/auth', [AuthController::class, 'auth'])->name('amocrm.auth');
 
 Route::redirect('/', 'contacts/create');
 Route::get('/contacts/create', [ContactController::class, 'create'])->name('contacts.create');
-Route::post('/contacts/create', [ContactController::class, 'store'])->name('contacts.store');
+Route::post('/contacts/create', [ContactController::class, 'store'])->name('contacts.store')->middleware('json.always');

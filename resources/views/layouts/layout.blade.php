@@ -18,5 +18,6 @@
     <script>
         setInterval(function(){ $(".alert").fadeOut(); }, 4000);
     </script>
+@yield('js')
 </body>
 </html>

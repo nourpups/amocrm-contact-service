@@ -3,7 +3,7 @@
 @section('title', 'Кантакты сахраняттъ')
 
 @section('section')
-    <form class="container w-50" action="{{route('contacts.store')}}" method="POST">
+    <form id="contact-form" class="container w-50" action="{{route('contacts.store')}}" onsubmit="sendData(event)" method="POST">
         @csrf
         @if ($errors->any())
             <div class="alert alert-danger">
@@ -45,4 +45,55 @@
         </div>
         <button class="btn btn-primary">Создать контакт</button>
     </form>
+@endsection
+
+@section('js')
+    <script>
+        function sendData(event) {
+            event.preventDefault();
+            // Получаем данные формы
+            let formData = new FormData(document.getElementById('contact-form'));
+
+            fetch('{{ route("contacts.store") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{csrf_token()}}',
+                    'Accept': 'application/json'
+                },
+                body: formData,
+            })
+                .then(response => response.json())
+                .then(data => {
+                    location.reload()
+                })
+                .catch(error => {
+                    location.reload()
+                    // Обрабатываем ошибку
+                    console.error('Error:', error);
+
+                    // Отображаем ошибки валидации (если они есть)
+                    if (error.response && error.response.status === 422) {
+                        error.response.json().then(errors => {
+                            // Отображаем ошибки валидации в нужном месте вашего интерфейса
+                            console.log(errors);
+                            // Например, можно обновить DOM с ошибками в форме
+                            updateFormErrors(errors.errors);
+                        });
+                    }
+                });
+        }
+
+        function updateFormErrors(errors) {
+            // Определите, как вы хотите отобразить ошибки в форме
+            // Например, вы можете добавить сообщения об ошибках рядом с соответствующими полями
+            for (let fieldName in errors) {
+                let errorMessages = errors[fieldName];
+                let inputElement = document.querySelector('[name="' + fieldName + '"]');
+                let errorContainer = document.createElement('div');
+                errorContainer.className = 'text-danger';
+                errorContainer.innerHTML = errorMessages.join('<br>');
+                inputElement.parentNode.appendChild(errorContainer);
+            }
+        }
+    </script>
 @endsection
