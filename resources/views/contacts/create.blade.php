@@ -4,17 +4,9 @@
 
 @section('section')
     <form id="contact-form" class="container w-50" action="{{route('contacts.store')}}" onsubmit="sendData(event)" method="POST">
-        @csrf
-        @if ($errors->any())
-            <div class="alert alert-danger">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
         <h1 class="text-end">Создать контакт</h1>
+        <div id="validationErrors" class="rounded p-3 my-3"
+             style="display: none; background-color: #f8d7da; border-color: #f5c6cb;color: #721c24"></div>
         <div class="mb-3">
             <label class="form-label">Имя</label>
             <input type="text" name="first_name" class="form-control" placeholder="Ложкабек" />
@@ -63,37 +55,26 @@
                 body: formData,
             })
                 .then(response => response.json())
-                .then(data => {
-                    location.reload()
-                })
-                .catch(error => {
-                    location.reload()
-                    // Обрабатываем ошибку
-                    console.error('Error:', error);
+                .then(errors => {
+                    const validationErrorsElement = document.getElementById('validationErrors');
+                    validationErrorsElement.innerHTML = '';
 
-                    // Отображаем ошибки валидации (если они есть)
-                    if (error.response && error.response.status === 422) {
-                        error.response.json().then(errors => {
-                            // Отображаем ошибки валидации в нужном месте вашего интерфейса
-                            console.log(errors);
-                            // Например, можно обновить DOM с ошибками в форме
-                            updateFormErrors(errors.errors);
-                        });
-                    }
-                });
+                    Object.keys(errors.errors).forEach(fieldName => {
+                        const errorMessage = errors.errors[fieldName][0];
+                        displayValidationError(validationErrorsElement, errorMessage);
+                    });
+
+                    validationErrorsElement.style.display = 'block';
+                })
         }
 
-        function updateFormErrors(errors) {
-            // Определите, как вы хотите отобразить ошибки в форме
-            // Например, вы можете добавить сообщения об ошибках рядом с соответствующими полями
-            for (let fieldName in errors) {
-                let errorMessages = errors[fieldName];
-                let inputElement = document.querySelector('[name="' + fieldName + '"]');
-                let errorContainer = document.createElement('div');
-                errorContainer.className = 'text-danger';
-                errorContainer.innerHTML = errorMessages.join('<br>');
-                inputElement.parentNode.appendChild(errorContainer);
-            }
+        function displayValidationError(element, errorMessage) {
+            // Создаем новый элемент для отображения ошибки
+            const errorElement = document.createElement('p');
+            errorElement.textContent = errorMessage;
+
+            // Добавляем элемент с ошибкой в элемент для отображения ошибок
+            element.appendChild(errorElement);
         }
     </script>
 @endsection
