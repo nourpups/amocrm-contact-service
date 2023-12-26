@@ -1,12 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\API;
 
 use AmoCRM\Exceptions\AmoCRMApiException;
 use AmoCRM\Exceptions\AmoCRMMissedTokenException;
 use AmoCRM\Exceptions\AmoCRMoAuthApiException;
 use AmoCRM\Models\Customers\CustomerModel;
 use App\Enums\Genders;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreContactRequest;
 use App\Services\AmoCRM;
 
@@ -28,6 +29,7 @@ class ContactController extends Controller
     public function store(StoreContactRequest $request, AmoCRM $amoCRM)
     {
         $data = $request->validated();
+        dd($data);
 
         $contacts = $amoCRM->apiClient->contacts()->get();
         if (!$amoCRM->isContactUnique($contacts, $data['custom_fields_values']['phone'])) {
