@@ -7,17 +7,9 @@ use AmoCRM\Collections\CatalogElementsCollection;
 use AmoCRM\Collections\ContactsCollection;
 use AmoCRM\Collections\CustomFieldsValuesCollection;
 use AmoCRM\Collections\LinksCollection;
-use AmoCRM\Enum\InvoicesCustomFieldsEnums;
-use AmoCRM\Exceptions\AmoCRMApiException;
-use AmoCRM\Exceptions\AmoCRMMissedTokenException;
-use AmoCRM\Exceptions\AmoCRMoAuthApiException;
-use AmoCRM\Exceptions\InvalidArgumentException;
 use AmoCRM\Helpers\EntityTypesInterface;
-use AmoCRM\Models\BaseApiModel;
 use AmoCRM\Models\CatalogElementModel;
 use AmoCRM\Models\ContactModel;
-use AmoCRM\Models\Customers\CustomerModel;
-use AmoCRM\Models\CustomFields\WithEnumCustomFieldModel;
 use AmoCRM\Models\CustomFieldsValues\MultitextCustomFieldValuesModel;
 use AmoCRM\Models\CustomFieldsValues\NumericCustomFieldValuesModel;
 use AmoCRM\Models\CustomFieldsValues\SelectCustomFieldValuesModel;
@@ -30,11 +22,10 @@ use AmoCRM\Models\CustomFieldsValues\ValueModels\SelectCustomFieldValueModel;
 use AmoCRM\Models\LeadModel;
 use AmoCRM\Models\TaskModel;
 use Carbon\Carbon;
-use Illuminate\Console\View\Components\Task;
-use League\OAuth2\Client\Token\AccessToken;
 
 class AmoCRM
 {
+
     // Константы Контактов
     protected const CONTACT_GENDER_FIELD_ID = 723489;
 
@@ -51,9 +42,9 @@ class AmoCRM
 
     public const PRODUCTS_CATALOG_ELEMENTS_PRICE_DEFAULT_VALUE = 58008;
 
-    const PRODUCTS_CATALOG_ELEMENTS_QUANTITY_DEFAULT_VALUE = 2;
+    private const PRODUCTS_CATALOG_ELEMENTS_QUANTITY_DEFAULT_VALUE = 2;
 
-    const PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_ID = 671469;
+    private const PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_ID = 671469;
 
     // Константы Задач
     public const UZBEKISTAN_WORK_TIME_START = '9:00';
@@ -62,7 +53,7 @@ class AmoCRM
 
     public const UZBEKISTAN_TIMEZONE = 'Asia/Tashkent';
 
-    public AmoCRMApiClient $apiClient;
+    private AmoCRMApiClient $apiClient;
 
     public function __construct()
     {
@@ -76,6 +67,12 @@ class AmoCRM
         $apiClient->setAccessToken(session('token'));
 
         $this->apiClient = $apiClient;
+
+    }
+
+    public function getClient(): AmoCRMApiClient
+    {
+        return $this->apiClient;
     }
 
     public function createLead(ContactModel $contact): LeadModel

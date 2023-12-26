@@ -2,36 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use AmoCRM\Collections\CatalogElementsCollection;
-use AmoCRM\Collections\ContactsCollection;
-use AmoCRM\Collections\CustomFieldsValuesCollection;
-use AmoCRM\Collections\LinksCollection;
 use AmoCRM\Exceptions\AmoCRMApiException;
 use AmoCRM\Exceptions\AmoCRMMissedTokenException;
 use AmoCRM\Exceptions\AmoCRMoAuthApiException;
-use AmoCRM\Filters\CatalogElementsFilter;
-use AmoCRM\Helpers\EntityTypesInterface;
-use AmoCRM\Models\CatalogElementModel;
-use AmoCRM\Models\ContactModel;
 use AmoCRM\Models\Customers\CustomerModel;
-use AmoCRM\Models\CustomFieldsValues\MultitextCustomFieldValuesModel;
-use AmoCRM\Models\CustomFieldsValues\NumericCustomFieldValuesModel;
-use AmoCRM\Models\CustomFieldsValues\SelectCustomFieldValuesModel;
-use AmoCRM\Models\CustomFieldsValues\ValueCollections\MultitextCustomFieldValueCollection;
-use AmoCRM\Models\CustomFieldsValues\ValueCollections\NumericCustomFieldValueCollection;
-use AmoCRM\Models\CustomFieldsValues\ValueCollections\SelectCustomFieldValueCollection;
-use AmoCRM\Models\CustomFieldsValues\ValueModels\MultitextCustomFieldValueModel;
-use AmoCRM\Models\CustomFieldsValues\ValueModels\NumericCustomFieldValueModel;
-use AmoCRM\Models\CustomFieldsValues\ValueModels\SelectCustomFieldValueModel;
-use AmoCRM\Models\LeadModel;
-use AmoCRM\Models\LinkModel;
-use AmoCRM\Models\TaskModel;
 use App\Enums\Genders;
 use App\Http\Requests\StoreContactRequest;
 use App\Services\AmoCRM;
-use Carbon\Carbon;
-use Carbon\CarbonInterface;
-use function Sodium\add;
 
 class ContactController extends Controller
 {
