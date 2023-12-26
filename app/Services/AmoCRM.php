@@ -53,7 +53,7 @@ class AmoCRM
 
     public const UZBEKISTAN_TIMEZONE = 'Asia/Tashkent';
 
-    private AmoCRMApiClient $apiClient;
+    public AmoCRMApiClient $apiClient;
 
     public function __construct()
     {
