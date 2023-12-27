@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Services;
 
@@ -11,6 +12,7 @@ use AmoCRM\Collections\LinksCollection;
 use AmoCRM\Helpers\EntityTypesInterface;
 use AmoCRM\Models\CatalogElementModel;
 use AmoCRM\Models\ContactModel;
+use AmoCRM\Models\Customers\CustomerModel;
 use AmoCRM\Models\CustomFieldsValues\MultitextCustomFieldValuesModel;
 use AmoCRM\Models\CustomFieldsValues\NumericCustomFieldValuesModel;
 use AmoCRM\Models\CustomFieldsValues\SelectCustomFieldValuesModel;
@@ -22,39 +24,17 @@ use AmoCRM\Models\CustomFieldsValues\ValueModels\NumericCustomFieldValueModel;
 use AmoCRM\Models\CustomFieldsValues\ValueModels\SelectCustomFieldValueModel;
 use AmoCRM\Models\LeadModel;
 use AmoCRM\Models\TaskModel;
+use AmoCRM\Models\UserModel;
+use App\Enums\CatalogsIds;
+use App\Enums\CustomFieldsValuesCodes;
+use App\Enums\CustomFieldsValuesDefaultValues;
+use App\Enums\CustomFieldsValuesIds;
+use App\Enums\TasksDetails;
 use Carbon\Carbon;
 
 class AmoCRM
 {
-
-    // Константы Контактов
-    protected const CONTACT_GENDER_FIELD_ID = 723489;
-
-    public const CONTACT_AGE_FIELD_ID = 723491;
-
-    public const CONTACT_PHONE_CUSTOM_FIELD_CODE = 'PHONE';
-
-    public const CONTACT_EMAIL_CUSTOM_FIELD_CODE = 'EMAIL';
-
-    public const CONTACT_PHONE_CUSTOM_FIELD_VALUE_ENUM = 'WORK';
-
-    // Константы Элементов Каталога "Товары"
-    public const PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_CODE = 'PRICE';
-
-    public const PRODUCTS_CATALOG_ELEMENTS_PRICE_DEFAULT_VALUE = 58008;
-
-    private const PRODUCTS_CATALOG_ELEMENTS_QUANTITY_DEFAULT_VALUE = 2;
-
-    private const PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_ID = 671469;
-
-    // Константы Задач
-    public const UZBEKISTAN_WORK_TIME_START = '9:00';
-
-    public const UZBEKISTAN_WORK_TIME_END = '18:00';
-
-    public const UZBEKISTAN_TIMEZONE = 'Asia/Tashkent';
-
-    public AmoCRMApiClient $apiClient;
+    private AmoCRMApiClient $apiClient;
 
     public function __construct()
     {
@@ -68,7 +48,6 @@ class AmoCRM
         $apiClient->setAccessToken(session('token'));
 
         $this->apiClient = $apiClient;
-
     }
 
     public function getClient(): AmoCRMApiClient
@@ -76,7 +55,7 @@ class AmoCRM
         return $this->apiClient;
     }
 
-    public function createLead(ContactModel $contact): LeadModel
+    public function createLeadByContact(ContactModel $contact): LeadModel
     {
         $lead = (new LeadModel())
             ->setName('Сделка с контактом ' . $contact->getName());
@@ -103,20 +82,21 @@ class AmoCRM
         return $this->apiClient->contacts()->addOne($contact);
     }
 
-    public function linkLeadToContact($contact, $lead) {
+    public function linkLeadToContact(ContactModel $contact, LeadModel $lead): LinksCollection
+    {
         $links = (new LinksCollection())->add($lead);
 
         return $this->apiClient->contacts()->link($contact, $links);
     }
 
-    public function linkContactToCustomer($contact, $customer): LinksCollection
+    public function linkContactToCustomer(ContactModel $contact, CustomerModel $customer): LinksCollection
     {
         $links = (new LinksCollection())->add($contact);
 
         return $this->apiClient->customers()->link($customer, $links);
     }
 
-    public function createTask(LeadModel $lead): TaskModel
+    public function createTaskByLead(LeadModel $lead): TaskModel
     {
         $task = new TaskModel();
         $task->setTaskTypeId(TaskModel::TASK_TYPE_ID_FOLLOW_UP)
@@ -125,7 +105,7 @@ class AmoCRM
             ->setEntityId($lead->getId())
             ->setDuration($this->calculateDuration())
             ->setCompleteTill(
-                $this->calculateCompleteTill(now(static::UZBEKISTAN_TIMEZONE))
+                $this->calculateCompleteTill(now(TasksDetails::UZBEKISTAN_TIMEZONE))
             )
             ->setResponsibleUserId($this->getResponsibleUserId());
 
@@ -135,7 +115,7 @@ class AmoCRM
     public function createProducts(): CatalogElementsCollection
     {
         $catalogs = $this->apiClient->catalogs()->get();
-        $productsCatalog = $catalogs->getBy('name', 'Товары');
+        $productsCatalog = $catalogs->getBy('name', CatalogsIds::PRODUCTS_CATALOG_ID);
 
         // Создаю Элементов Каталога "Товары" и прикрепляю к ним цену
         $productsElementsCollection = $this->makeProductsCollection();
@@ -144,7 +124,8 @@ class AmoCRM
             ->add($productsElementsCollection);
     }
 
-    private function makeProductsCollection(): CatalogElementsCollection {
+    private function makeProductsCollection(): CatalogElementsCollection
+    {
         // Заполняю поле (Цена) для Товара
         $priceCustomFieldValue = $this->makePriceCustomFieldValue();
 
@@ -159,55 +140,57 @@ class AmoCRM
             );
     }
 
-    private function makePriceCustomFieldValue(): CustomFieldsValuesCollection {
-
+    private function makePriceCustomFieldValue(): CustomFieldsValuesCollection
+    {
         return (new CustomFieldsValuesCollection)
             ->add((new NumericCustomFieldValuesModel())
-                ->setFieldCode(static::PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_CODE)
+                ->setFieldCode(CustomFieldsValuesCodes::PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_CODE->value)
                 ->setValues((new NumericCustomFieldValueCollection())
                     ->add((new NumericCustomFieldValueModel())
-                        ->setValue(static::PRODUCTS_CATALOG_ELEMENTS_PRICE_DEFAULT_VALUE))
+                        ->setValue(CustomFieldsValuesDefaultValues::PRODUCTS_CATALOG_ELEMENTS_PRICE_DEFAULT_VALUE->value)
+                    )
                 )
             );
     }
 
-    public function linkProductsToLead($lead, $productsElements): LinksCollection {
+    public function linkProductsToLead(LeadModel $lead, CatalogElementsCollection $productsElements): LinksCollection
+    {
         $links = new LinksCollection();
 
         /** @var CatalogElementModel $element */
         foreach ($productsElements as $element) {
-
             $links->add((new CatalogElementModel())
                 ->setCatalogId($element->getCatalogId())
                 ->setId($element->getId())
-                ->setQuantity(static::PRODUCTS_CATALOG_ELEMENTS_QUANTITY_DEFAULT_VALUE)
-                ->setPriceId(static::PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_ID)
+                ->setQuantity(CustomFieldsValuesDefaultValues::PRODUCTS_CATALOG_ELEMENTS_QUANTITY_DEFAULT_VALUE->value)
+                ->setPriceId(CustomFieldsValuesIds::PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_ID->value)
             );
         }
 
         return $this->apiClient->leads()->link($lead, $links);
     }
-    public function isContactValid($contacts, $phone): bool {
+
+    public function isContactValid(ContactsCollection $contacts, string $phone): ContactModel|bool
+    {
         $contact = $this->isContactUnique($contacts, $phone);
-
-        if($contact === true) {
+        if ($contact === true) {
             return true;
         }
 
-        if(!$this->isContactLeadSucceeded($contact->getLeads())) {
+        if (!$this->isContactLeadSucceeded($contact->getLeads())) {
             return true;
         }
 
-
-        return false;
+        return $contact; // контакт который существует (не валидный)
     }
 
-    private function isContactLeadSucceeded(LeadsCollection|null $leads): bool {
+    private function isContactLeadSucceeded(?LeadsCollection $leads): bool
+    {
+        if ($leads !== null) {
         /** @var LeadModel $lead */
-        if(!is_null($leads)) {
             foreach ($leads as $lead) {
                 $lead = $this->apiClient->leads()->getOne($lead->getId());
-                if($lead->getStatusId() === LeadModel::WON_STATUS_ID) {
+                if ($lead->getStatusId() === LeadModel::WON_STATUS_ID) {
                     return true;
                 }
             }
@@ -215,18 +198,20 @@ class AmoCRM
 
         return false;
     }
-    private function isContactUnique(ContactsCollection $contacts, string $phone): ContactModel|bool {
+
+    private function isContactUnique(ContactsCollection $contacts, string $phone): ContactModel|bool
+    {
         /**
          * @var ContactModel $contact
          * @var MultitextCustomFieldValueModel $phoneNumber
          */
-
         foreach ($contacts as $contact) {
-            $contactsPhoneNumbers = $contact->getCustomFieldsValues()->getBy('fieldCode', 'PHONE')->getValues();
-
+            $contactsPhoneNumbers = $contact->getCustomFieldsValues()
+                ->getBy('fieldCode', CustomFieldsValuesCodes::CONTACT_PHONE_CUSTOM_FIELD_CODE)
+                ->getValues();
             foreach ($contactsPhoneNumbers as $phoneNumber) {
-                if($phoneNumber->getValue() === $phone) {
-                    return $contact;
+                if ($phoneNumber->getValue() === $phone) {
+                    return $contact; // существующий контакт
                 }
             }
         }
@@ -234,37 +219,41 @@ class AmoCRM
         return true;
     }
 
-    private function getResponsibleUserId(): int {
-        return $this->apiClient->account()
-            ->getCurrent()
-            ->getCurrentUserId(); // (не) cлучайный пользователь
+    private function getResponsibleUserId(): int
+    {
+        $users = $this->apiClient->users()->get();
+        /** @var UserModel $randomUser */
+        $randomUser = collect($users)->random();
+
+        return $randomUser->getId(); // (не(не)) cлучайный пользователь
     }
 
-    private function getContactCustomFieldValues(array $customFieldValues): CustomFieldsValuesCollection {
+    private function getContactCustomFieldValues(array $customFieldValues): CustomFieldsValuesCollection
+    {
         return (new CustomFieldsValuesCollection())
             ->add(
                 (new MultitextCustomFieldValuesModel())
-                    ->setFieldCode(static::CONTACT_PHONE_CUSTOM_FIELD_CODE)
+                    ->setFieldCode(CustomFieldsValuesCodes::CONTACT_PHONE_CUSTOM_FIELD_CODE->value)
                     ->setValues((new MultitextCustomFieldValueCollection())
                         ->add((new MultitextCustomFieldValueModel())
-                            ->setEnum(static::CONTACT_PHONE_CUSTOM_FIELD_VALUE_ENUM)
+                            ->setEnum(CustomFieldsValuesCodes::CONTACT_PHONE_CUSTOM_FIELD_VALUE_ENUM->value)
                             ->setValue($customFieldValues['phone'])
                         )
                     )
             )
             ->add(
                 (new MultitextCustomFieldValuesModel())
-                    ->setFieldCode(static::CONTACT_EMAIL_CUSTOM_FIELD_CODE)
+                    ->setFieldCode(CustomFieldsValuesCodes::CONTACT_EMAIL_CUSTOM_FIELD_CODE->value)
                     ->setValues((new MultitextCustomFieldValueCollection())
                         ->add((new MultitextCustomFieldValueModel())
-                            ->setEnum(static::CONTACT_PHONE_CUSTOM_FIELD_VALUE_ENUM)
+                            ->setEnum(CustomFieldsValuesCodes::CONTACT_PHONE_CUSTOM_FIELD_VALUE_ENUM->value)
                             ->setValue($customFieldValues['email'])
                         )
                     )
             )
             ->add(
                 (new NumericCustomFieldValuesModel())
-                    ->setFieldId(static::CONTACT_AGE_FIELD_ID)
+                    ->setFieldId(CustomFieldsValuesIds::CONTACT_AGE_FIELD_ID->value)
                     ->setValues((new NumericCustomFieldValueCollection())->add(
                             (new NumericCustomFieldValueModel())->setValue($customFieldValues['age'])
                         )
@@ -272,7 +261,7 @@ class AmoCRM
             )
             ->add(
                 (new SelectCustomFieldValuesModel())
-                    ->setFieldId(static::CONTACT_GENDER_FIELD_ID)
+                    ->setFieldId(CustomFieldsValuesIds::CONTACT_GENDER_FIELD_ID->value)
                     ->setValues((new SelectCustomFieldValueCollection())->add(
                             (new SelectCustomFieldValueModel())->setValue($customFieldValues['gender'])
                         )
@@ -281,13 +270,13 @@ class AmoCRM
     }
 
     private function calculateDuration(
-        string $startTime = self::UZBEKISTAN_WORK_TIME_START,
-        string $endTime = self::UZBEKISTAN_WORK_TIME_END
+        string $startTime = TasksDetails::UZBEKISTAN_WORK_TIME_START,
+        string $endTime = TasksDetails::UZBEKISTAN_WORK_TIME_END
     ): int {
         $startTime = Carbon::parse($startTime);
         $endTime = Carbon::parse($endTime);
 
-        if($startTime->greaterThan($endTime)) { // например работа с 19:00 до 2:00
+        if ($startTime->greaterThan($endTime)) { // например работа с 19:00 до 2:00
             $endTime->addWeekday();
         }
 
@@ -296,13 +285,13 @@ class AmoCRM
 
     private function calculateCompleteTill(
         Carbon $createdAt,
-        string $workingHoursStart = self::UZBEKISTAN_WORK_TIME_START,
-        string $workingHoursEnd = self::UZBEKISTAN_WORK_TIME_END
+        string $workingHoursStart = TasksDetails::UZBEKISTAN_WORK_TIME_START,
+        string $workingHoursEnd = TasksDetails::UZBEKISTAN_WORK_TIME_END
     ): int {
         $startTime = Carbon::parse($workingHoursStart);
         $endTime = Carbon::parse($workingHoursEnd);
 
-        if($createdAt->greaterThan($endTime)) { // если Задача создана после рабочего времени, переносим Задачу на завтра
+        if ($createdAt->greaterThan($endTime)) { // если Задача создана после рабочего времени, переносим Задачу на завтра
             $createdAt->addWeekday();
         }
         $createdAt->setTime($startTime->hour, $startTime->minute); // задача начинается с 9:00

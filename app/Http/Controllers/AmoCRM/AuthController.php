@@ -4,11 +4,11 @@ namespace App\Http\Controllers\AmoCRM;
 
 use AmoCRM\Client\AmoCRMApiClient;
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 
 class AuthController extends Controller
 {
-    public function auth()
+    public function auth(): RedirectResponse
     {
         $apiClient = new AmoCRMApiClient(
             config('amocrm.client_id'),
