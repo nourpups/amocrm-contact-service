@@ -115,7 +115,7 @@ class AmoCRM
     public function createProducts(): CatalogElementsCollection
     {
         $catalogs = $this->apiClient->catalogs()->get();
-        $productsCatalog = $catalogs->getBy('name', CatalogsIds::PRODUCTS_CATALOG_ID);
+        $productsCatalog = $catalogs->getBy('id', CatalogsIds::PRODUCTS_CATALOG_ID);
 
         // Создаю Элементов Каталога "Товары" и прикрепляю к ним цену
         $productsElementsCollection = $this->makeProductsCollection();
