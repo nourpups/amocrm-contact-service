@@ -3,6 +3,7 @@
 @section('title', 'Кантакты сахраняттъ')
 
 @section('section')
+
     <form id="contact-form" class="container w-50" action="{{route('contacts.store')}}" onsubmit="sendData(event)" method="POST">
         <h1 class="text-end">Создать контакт</h1>
         <div id="validationErrors" class="rounded p-3 my-3"
@@ -43,29 +44,45 @@
     <script>
         function sendData(event) {
             event.preventDefault();
-            // Получаем данные формы
             let formData = new FormData(document.getElementById('contact-form'));
 
             fetch('{{ route("contacts.store") }}', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{csrf_token()}}',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
                 },
                 body: formData,
             })
                 .then(response => response.json())
-                .then(errors => {
+                .then(data => {
+                if(data.success) {
+                    const contactForm = document.getElementById('contact-form')
+                    contactForm.reset();
+
+                    const successMessageElement = document.getElementById('successMessage');
+                    successMessageElement.innerHTML = data.success
+                    successMessageElement.style.display = 'block';
+                    successMessageElement.classList.add('show', 'text-center');
+
+                    setTimeout(function(){ $(".alert").fadeOut(); }, 7000);
+                }
+                if(data.errors) {
                     const validationErrorsElement = document.getElementById('validationErrors');
                     validationErrorsElement.innerHTML = '';
 
-                    Object.keys(errors.errors).forEach(fieldName => {
-                        const errorMessage = errors.errors[fieldName][0];
+                    Object.keys(data.errors).forEach(fieldName => {
+                        const errorMessage = data.errors[fieldName][0];
                         displayValidationError(validationErrorsElement, errorMessage);
                     });
 
                     validationErrorsElement.style.display = 'block';
+                }
+
                 })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
         }
 
         function displayValidationError(element, errorMessage) {

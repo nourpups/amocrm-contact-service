@@ -1,5 +1,6 @@
 <?php
 
+use AmoCRM\Helpers\EntityTypesInterface;
 use App\Http\Controllers\AmoCRM\AuthController;
 use App\Http\Controllers\ContactController;
 use Carbon\Carbon;

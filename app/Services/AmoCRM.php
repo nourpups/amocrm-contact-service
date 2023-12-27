@@ -6,6 +6,7 @@ use AmoCRM\Client\AmoCRMApiClient;
 use AmoCRM\Collections\CatalogElementsCollection;
 use AmoCRM\Collections\ContactsCollection;
 use AmoCRM\Collections\CustomFieldsValuesCollection;
+use AmoCRM\Collections\Leads\LeadsCollection;
 use AmoCRM\Collections\LinksCollection;
 use AmoCRM\Helpers\EntityTypesInterface;
 use AmoCRM\Models\CatalogElementModel;
@@ -78,13 +79,12 @@ class AmoCRM
     public function createLead(ContactModel $contact): LeadModel
     {
         $lead = (new LeadModel())
-            ->setName('Сделка с контактом ' . $contact->getName())
-            ->setContacts((new ContactsCollection())->add($contact));
+            ->setName('Сделка с контактом ' . $contact->getName());
 
-        return $this->apiClient->leads()->addOneComplex($lead);
+        return $this->apiClient->leads()->addOne($lead);
     }
 
-    public function makeContact(array $data): ContactModel
+    public function createContact(array $data): ContactModel
     {
         $contact = new ContactModel();
         $contact->setFirstName($data['first_name']);
@@ -98,8 +98,15 @@ class AmoCRM
 
         // Заполняю поля (телефон, почта, возраст, пол) для Контакта
         $contactCustomFieldValues = $this->getContactCustomFieldValues($data['custom_fields_values']);
+        $contact->setCustomFieldsValues($contactCustomFieldValues);
 
-        return $contact->setCustomFieldsValues($contactCustomFieldValues);
+        return $this->apiClient->contacts()->addOne($contact);
+    }
+
+    public function linkLeadToContact($contact, $lead) {
+        $links = (new LinksCollection())->add($lead);
+
+        return $this->apiClient->contacts()->link($contact, $links);
     }
 
     public function linkContactToCustomer($contact, $customer): LinksCollection
@@ -180,8 +187,35 @@ class AmoCRM
 
         return $this->apiClient->leads()->link($lead, $links);
     }
+    public function isContactValid($contacts, $phone): bool {
+        $contact = $this->isContactUnique($contacts, $phone);
 
-    public function isContactUnique(ContactsCollection $contacts, string $phone): bool {
+        if($contact === true) {
+            return true;
+        }
+
+        if(!$this->isContactLeadSucceeded($contact->getLeads())) {
+            return true;
+        }
+
+
+        return false;
+    }
+
+    private function isContactLeadSucceeded(LeadsCollection|null $leads): bool {
+        /** @var LeadModel $lead */
+        if(!is_null($leads)) {
+            foreach ($leads as $lead) {
+                $lead = $this->apiClient->leads()->getOne($lead->getId());
+                if($lead->getStatusId() === LeadModel::WON_STATUS_ID) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+    private function isContactUnique(ContactsCollection $contacts, string $phone): ContactModel|bool {
         /**
          * @var ContactModel $contact
          * @var MultitextCustomFieldValueModel $phoneNumber
@@ -192,7 +226,7 @@ class AmoCRM
 
             foreach ($contactsPhoneNumbers as $phoneNumber) {
                 if($phoneNumber->getValue() === $phone) {
-                    return false;
+                    return $contact;
                 }
             }
         }

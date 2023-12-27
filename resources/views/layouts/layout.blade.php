@@ -11,12 +11,12 @@
     <title>@yield('title')</title>
 </head>
 <body>
-    @include('partials.flash')
+    <div id="successMessage" class="alert alert-success fade" style="display: none;"></div>
     @yield('section')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
     <script>
-        setInterval(function(){ $(".alert").fadeOut(); }, 4000);
+
     </script>
 @yield('js')
 </body>
