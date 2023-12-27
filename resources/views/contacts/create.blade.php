@@ -64,8 +64,6 @@
                     successMessageElement.innerHTML = data.success
                     successMessageElement.style.display = 'block';
                     successMessageElement.classList.add('show', 'text-center');
-
-                    setTimeout(function(){ $(".alert").fadeOut(); }, 7000);
                 }
                 if(data.errors) {
                     const validationErrorsElement = document.getElementById('validationErrors');

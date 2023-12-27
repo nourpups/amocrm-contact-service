@@ -2,11 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use AmoCRM\Collections\NotesCollection;
+use AmoCRM\EntitiesServices\Interfaces\HasParentEntity;
 use AmoCRM\Exceptions\AmoCRMApiException;
 use AmoCRM\Exceptions\AmoCRMMissedTokenException;
 use AmoCRM\Exceptions\AmoCRMoAuthApiException;
+use AmoCRM\Helpers\EntityTypesInterface;
 use AmoCRM\Models\ContactModel;
 use AmoCRM\Models\Customers\CustomerModel;
+use AmoCRM\Models\Factories\NoteFactory;
+use AmoCRM\Models\NoteModel;
+use AmoCRM\Models\NoteType\CommonNote;
+use AmoCRM\Models\TaskModel;
 use App\Enums\Genders;
 use App\Http\Requests\StoreContactRequest;
 use App\Services\AmoCRM;
@@ -38,7 +45,13 @@ class ContactController extends Controller
 
             $contact = $contacts->last(); // "существующий контакт"
 
+            $text = date('d.m.Y').' был создан покупатель с названием «'.$customer->getName().'»';
+            $note = (new CommonNote())->setEntityId($contact->getId())
+                    ->setCreatedBy($contact->getResponsibleUserId())
+                    ->setText($text)
+            ;
             $amoCRM->linkContactToCustomer($contact, $customer);
+            $amoCRM->apiClient->notes(EntityTypesInterface::CONTACTS)->addOne($note);
 
             return response()->json([
                 'success' => 'Контакт существует и все Сделки Контакта успешные, по этому создал Покупателя с привязанным существующим контактом'
