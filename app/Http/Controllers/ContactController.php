@@ -17,6 +17,7 @@ use AmoCRM\Models\TaskModel;
 use App\Enums\Genders;
 use App\Http\Requests\StoreContactRequest;
 use App\Services\AmoCRM;
+use Illuminate\Http\Request;
 
 class ContactController extends Controller
 {
@@ -48,8 +49,8 @@ class ContactController extends Controller
             $text = date('d.m.Y').' был создан покупатель с названием «'.$customer->getName().'»';
             $note = (new CommonNote())->setEntityId($contact->getId())
                     ->setCreatedBy($contact->getResponsibleUserId())
-                    ->setText($text)
-            ;
+                    ->setText($text);
+
             $amoCRM->linkContactToCustomer($contact, $customer);
             $amoCRM->apiClient->notes(EntityTypesInterface::CONTACTS)->addOne($note);
 

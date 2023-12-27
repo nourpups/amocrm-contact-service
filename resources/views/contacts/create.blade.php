@@ -44,15 +44,27 @@
     <script>
         function sendData(event) {
             event.preventDefault();
-            let formData = new FormData(document.getElementById('contact-form'));
+
+            const formData = new FormData(document.getElementById('contact-form'));
+            let jsonData = {
+                first_name: formData.get('first_name'),
+                last_name: formData.get('last_name'),
+                custom_fields_values: {
+                    email:  formData.get('custom_fields_values[email]'),
+                    phone:  formData.get('custom_fields_values[phone]'),
+                    age:  formData.get('custom_fields_values[age]'),
+                    gender:  formData.get('custom_fields_values[gender]'),
+                }
+            };
 
             fetch('{{ route("contacts.store") }}', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': '{{csrf_token()}}',
                     'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 },
-                body: formData,
+                body: JSON.stringify(jsonData),
             })
                 .then(response => response.json())
                 .then(data => {
@@ -84,11 +96,10 @@
         }
 
         function displayValidationError(element, errorMessage) {
-            // Создаем новый элемент для отображения ошибки
+
             const errorElement = document.createElement('p');
             errorElement.textContent = errorMessage;
 
-            // Добавляем элемент с ошибкой в элемент для отображения ошибок
             element.appendChild(errorElement);
         }
     </script>
