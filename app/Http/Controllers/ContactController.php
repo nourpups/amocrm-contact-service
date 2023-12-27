@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Http\Controllers;
@@ -11,10 +12,10 @@ use App\Enums\Genders;
 use App\Http\Requests\StoreContactRequest;
 use App\Services\AmoCRM;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 
 class ContactController extends Controller
 {
-
     public function create(): View
     {
         $genders = Genders::cases();
@@ -22,14 +23,13 @@ class ContactController extends Controller
         return view('contacts.create', compact('genders'));
     }
 
-    public function store(StoreContactRequest $request, AmoCRM $amoCRM)
+    public function store(StoreContactRequest $request, AmoCRM $amoCRM): JsonResponse
     {
         $data = $request->validated();
 
         $contacts = $amoCRM->getClient()->contacts()->get(with: (array)ContactModel::LEADS);
-        $contact = $amoCRM->isContactValid($contacts, $data['custom_fields_values']['phone']);
-        if (!$contact) {
-
+        $contact = $amoCRM->getValidContact($contacts, $data['custom_fields_values']['phone']);
+        if ($contact !== null) {
             $customer = (new CustomerModel())->setName('ПомПимПомПимПомПомПимПом');
             $customer = $amoCRM->getClient()->customers()->addOne($customer);
 
@@ -67,5 +67,4 @@ class ContactController extends Controller
             'success' => 'Всё чики пуки'
         ]);
     }
-
 }

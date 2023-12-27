@@ -58,7 +58,8 @@ class AmoCRM
     public function createLeadByContact(ContactModel $contact): LeadModel
     {
         $lead = (new LeadModel())
-            ->setName('Сделка с контактом ' . $contact->getName());
+            ->setName('Сделка с контактом ' . $contact->getName())
+            ->setResponsibleUserId($this->getResponsibleUserId());
 
         return $this->apiClient->leads()->addOne($lead);
     }
@@ -72,8 +73,7 @@ class AmoCRM
 
         // беру (не) случайного пользователя и делаю ответственным за контакт
 
-        $contact->setResponsibleUserId($this->getResponsibleUserId())
-            ->setCreatedBy($this->getResponsibleUserId());
+        $contact->setResponsibleUserId($this->getResponsibleUserId());
 
         // Заполняю поля (телефон, почта, возраст, пол) для Контакта
         $contactCustomFieldValues = $this->getContactCustomFieldValues($data['custom_fields_values']);
@@ -107,7 +107,7 @@ class AmoCRM
             ->setCompleteTill(
                 $this->calculateCompleteTill(now(TasksDetails::UZBEKISTAN_TIMEZONE))
             )
-            ->setResponsibleUserId($this->getResponsibleUserId());
+            ->setResponsibleUserId($lead->getResponsibleUserId());
 
         return $this->apiClient->tasks()->addOne($task);
     }
@@ -159,26 +159,21 @@ class AmoCRM
 
         /** @var CatalogElementModel $element */
         foreach ($productsElements as $element) {
-            $links->add((new CatalogElementModel())
-                ->setCatalogId($element->getCatalogId())
-                ->setId($element->getId())
-                ->setQuantity(CustomFieldsValuesDefaultValues::PRODUCTS_CATALOG_ELEMENTS_QUANTITY_DEFAULT_VALUE->value)
-                ->setPriceId(CustomFieldsValuesIds::PRODUCTS_CATALOG_ELEMENTS_PRICE_FIELD_ID->value)
-            );
+            $links->add($element);
         }
 
         return $this->apiClient->leads()->link($lead, $links);
     }
 
-    public function isContactValid(ContactsCollection $contacts, string $phone): ContactModel|bool
+    public function getValidContact(ContactsCollection $contacts, string $phone): ?ContactModel
     {
-        $contact = $this->isContactUnique($contacts, $phone);
-        if ($contact === true) {
-            return true;
+        $contact = $this->getUniqueContact($contacts, $phone);
+        if ($contact === null) {
+            return null;
         }
 
         if (!$this->isContactLeadSucceeded($contact->getLeads())) {
-            return true;
+            return null;
         }
 
         return $contact; // контакт который существует (не валидный)
@@ -199,7 +194,7 @@ class AmoCRM
         return false;
     }
 
-    private function isContactUnique(ContactsCollection $contacts, string $phone): ContactModel|bool
+    private function getUniqueContact(ContactsCollection $contacts, string $phone): ?ContactModel
     {
         /**
          * @var ContactModel $contact
@@ -216,7 +211,7 @@ class AmoCRM
             }
         }
 
-        return true;
+        return null;
     }
 
     private function getResponsibleUserId(): int
