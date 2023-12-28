@@ -9,8 +9,10 @@ use AmoCRM\Models\ContactModel;
 use AmoCRM\Models\Customers\CustomerModel;
 use AmoCRM\Models\NoteType\CommonNote;
 use App\Enums\Genders;
+use App\Enums\TasksDetails;
 use App\Http\Requests\StoreContactRequest;
 use App\Services\AmoCRM;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 
@@ -29,6 +31,7 @@ class ContactController extends Controller
 
         $contacts = $amoCRM->getClient()->contacts()->get(with: (array)ContactModel::LEADS);
         $contact = $amoCRM->getValidContact($contacts, $data['custom_fields_values']['phone']);
+
         if ($contact !== null) {
             $customer = (new CustomerModel())->setName('ПомПимПомПимПомПомПимПом');
             $customer = $amoCRM->getClient()->customers()->addOne($customer);
@@ -48,7 +51,6 @@ class ContactController extends Controller
 
         // создаю Контакт
         $contact = $amoCRM->createContact($data);
-
         // Создаю Сделку
         $lead = $amoCRM->createLeadByContact($contact);
         // Связываю Сделку с Контактом
@@ -60,8 +62,6 @@ class ContactController extends Controller
         // Создаю 2 Товара, связываю Сделку с ранее созданными Элементами Каталога "Товары"
         $productsElements = $amoCRM->createProducts();
         $amoCRM->linkProductsToLead($lead, $productsElements);
-
-
 
         return response()->json([
             'success' => 'Всё чики пуки'

@@ -105,7 +105,7 @@ class AmoCRM
             ->setEntityId($lead->getId())
             ->setDuration($this->calculateDuration())
             ->setCompleteTill(
-                $this->calculateCompleteTill(now(TasksDetails::UZBEKISTAN_TIMEZONE))
+                $this->calculateCompleteTill(now(TasksDetails::UZBEKISTAN_TIMEZONE->value))
             )
             ->setResponsibleUserId($lead->getResponsibleUserId());
 
@@ -115,7 +115,7 @@ class AmoCRM
     public function createProducts(): CatalogElementsCollection
     {
         $catalogs = $this->apiClient->catalogs()->get();
-        $productsCatalog = $catalogs->getBy('id', CatalogsIds::PRODUCTS_CATALOG_ID);
+        $productsCatalog = $catalogs->getBy('id', CatalogsIds::PRODUCTS_CATALOG_ID->value);
 
         // Создаю Элементов Каталога "Товары" и прикрепляю к ним цену
         $productsElementsCollection = $this->makeProductsCollection();
@@ -159,7 +159,9 @@ class AmoCRM
 
         /** @var CatalogElementModel $element */
         foreach ($productsElements as $element) {
-            $links->add($element);
+            $links->add(
+                $element->setQuantity(CustomFieldsValuesDefaultValues::PRODUCTS_CATALOG_ELEMENTS_QUANTITY_DEFAULT_VALUE->value)
+            );
         }
 
         return $this->apiClient->leads()->link($lead, $links);
@@ -167,11 +169,11 @@ class AmoCRM
 
     public function getValidContact(ContactsCollection $contacts, string $phone): ?ContactModel
     {
-        $contact = $this->getUniqueContact($contacts, $phone);
+
+        $contact = $this->getNonUniqueContact($contacts, $phone);
         if ($contact === null) {
             return null;
         }
-
         if (!$this->isContactLeadSucceeded($contact->getLeads())) {
             return null;
         }
@@ -194,7 +196,7 @@ class AmoCRM
         return false;
     }
 
-    private function getUniqueContact(ContactsCollection $contacts, string $phone): ?ContactModel
+    private function getNonUniqueContact(ContactsCollection $contacts, string $phone): ?ContactModel
     {
         /**
          * @var ContactModel $contact
@@ -202,7 +204,7 @@ class AmoCRM
          */
         foreach ($contacts as $contact) {
             $contactsPhoneNumbers = $contact->getCustomFieldsValues()
-                ->getBy('fieldCode', CustomFieldsValuesCodes::CONTACT_PHONE_CUSTOM_FIELD_CODE)
+                ->getBy('fieldCode', CustomFieldsValuesCodes::CONTACT_PHONE_CUSTOM_FIELD_CODE->value)
                 ->getValues();
             foreach ($contactsPhoneNumbers as $phoneNumber) {
                 if ($phoneNumber->getValue() === $phone) {
@@ -265,11 +267,11 @@ class AmoCRM
     }
 
     private function calculateDuration(
-        string $startTime = TasksDetails::UZBEKISTAN_WORK_TIME_START,
-        string $endTime = TasksDetails::UZBEKISTAN_WORK_TIME_END
+        TasksDetails|string $startTime = TasksDetails::UZBEKISTAN_WORK_TIME_START,
+        TasksDetails|string $endTime = TasksDetails::UZBEKISTAN_WORK_TIME_END
     ): int {
-        $startTime = Carbon::parse($startTime);
-        $endTime = Carbon::parse($endTime);
+        $startTime = Carbon::parse($startTime->value);
+        $endTime = Carbon::parse($endTime->value);
 
         if ($startTime->greaterThan($endTime)) { // например работа с 19:00 до 2:00
             $endTime->addWeekday();
@@ -280,11 +282,11 @@ class AmoCRM
 
     private function calculateCompleteTill(
         Carbon $createdAt,
-        string $workingHoursStart = TasksDetails::UZBEKISTAN_WORK_TIME_START,
-        string $workingHoursEnd = TasksDetails::UZBEKISTAN_WORK_TIME_END
+        TasksDetails|string $workingHoursStart = TasksDetails::UZBEKISTAN_WORK_TIME_START,
+        TasksDetails|string $workingHoursEnd = TasksDetails::UZBEKISTAN_WORK_TIME_END
     ): int {
-        $startTime = Carbon::parse($workingHoursStart);
-        $endTime = Carbon::parse($workingHoursEnd);
+        $startTime = Carbon::parse($workingHoursStart->value);
+        $endTime = Carbon::parse($workingHoursEnd->value);
 
         if ($createdAt->greaterThan($endTime)) { // если Задача создана после рабочего времени, переносим Задачу на завтра
             $createdAt->addWeekday();
