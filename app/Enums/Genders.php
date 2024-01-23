@@ -9,4 +9,5 @@ enum Genders :string
     case MALE = 'Мужчина';
     case FEMALE = 'Женщина';
     case NON_BINARY = 'Не бинарный';
+    case WUNDERWAFFE = 'Темур';
 }
